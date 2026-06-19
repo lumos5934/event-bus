@@ -5,53 +5,65 @@ namespace LLib
 {
     public static class EventBus
     {
-        private static readonly Dictionary<Type, Delegate> Events = new();
+        private static readonly Dictionary<Type, List<Delegate>> _events = new();
+        private static readonly object _lock = new();
 
-
-        public static void Subscribe<T>(Action<T> handler)
+        public static ISubscription Subscribe<T>(Action<T> handler)
         {
             var type = typeof(T);
-            if (Events.TryGetValue(type, out var del))
+            lock (_lock)
             {
-                Events[type] = Delegate.Combine(del, handler);
-            }
-            else
-            {
-                Events[type] = handler;
-            }
-        }
-
-
-        public static void Unsubscribe<T>(Action<T> handler)
-        {
-            var type = typeof(T);
-            if (Events.TryGetValue(type, out var del))
-            {
-                var result = Delegate.Remove(del, handler);
-                if (result == null)
+                if (!_events.TryGetValue(type, out var handlers))
                 {
-                    Events.Remove(type);
+                    handlers = new List<Delegate>();
+                    _events[type] = handlers;
                 }
-                else
-                {
-                    Events[type] = result;
-                }
+                
+                handlers.Add(handler);
             }
+            
+            return new Subscription(() => Unsubscribe(handler));
         }
-
-
+        
         public static void Publish<T>(T e)
         {
-            if (Events.TryGetValue(typeof(T), out var del))
+            List<Delegate> snapshot;
+            lock (_lock)
             {
-                ((Action<T>)del)?.Invoke(e);
+                if (!_events.TryGetValue(typeof(T), out var handlers)) 
+                    return;
+                
+                snapshot = new List<Delegate>(handlers);
+            }
+
+            foreach (var handler in snapshot)
+            {
+                try
+                {
+                    ((Action<T>)handler).Invoke(e);
+                }
+                catch (Exception ex)
+                {
+                    UnityEngine.Debug.LogError($"[EventBus] Error in {typeof(T)}: {ex}");
+                }
             }
         }
-
-
-        public static void Clear()
+        
+        private static void Unsubscribe<T>(Action<T> handler)
         {
-            Events.Clear();
+            var type = typeof(T);
+            lock (_lock)
+            {
+                if (_events.TryGetValue(type, out var handlers))
+                {
+                    handlers.Remove(handler);
+                    
+                    if (handlers.Count == 0)
+                    {
+                        _events.Remove(type);
+                    }
+                }
+            }
         }
     }
 }
