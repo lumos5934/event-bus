@@ -7,7 +7,7 @@
 
 ## 🔧Usage
 
-### 구독 및 해제
+#### 구독 및 해제
 ```cs
 // 구독
 ISubscription sub = EventBus.Subscribe<PlayerJumpEvent>(OnPlayerJump);
@@ -21,7 +21,7 @@ sub.Dispose();
 <br>
 
 
-### 이벤트 실행
+#### 이벤트 실행
 ```cs
 
 EventBus.Publish(new ScoreChangedEvent { NewScore = 100 });
