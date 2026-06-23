@@ -8,7 +8,7 @@ namespace LLib
         private static readonly Dictionary<Type, List<Delegate>> _events = new();
         private static readonly object _lock = new();
 
-        public static ISubscription Subscribe<T>(Action<T> handler)
+        public static IEventSubscription Subscribe<T>(Action<T> handler)
         {
             var type = typeof(T);
             lock (_lock)
@@ -22,7 +22,7 @@ namespace LLib
                 handlers.Add(handler);
             }
             
-            return new Subscription(() => Unsubscribe(handler));
+            return new EventSubscription(() => Unsubscribe(handler));
         }
         
         public static void Publish<T>(T e)

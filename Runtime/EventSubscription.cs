@@ -3,11 +3,11 @@ using System;
 
 namespace LLib
 {
-    internal class Subscription : ISubscription
+    internal class EventSubscription : IEventSubscription
     {
         private Action _unsubscribe;
 
-        public Subscription(Action unsubscribe)
+        public EventSubscription(Action unsubscribe)
         {
             _unsubscribe = unsubscribe;
         }
